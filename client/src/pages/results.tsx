@@ -46,15 +46,39 @@ export default function Results() {
     const recs: RecommendationResult[] = JSON.parse(submission.recommendations);
     const courseNames = recs.map(r => r.name).join(", ");
     const text = `I just discovered my career path at The Incubators Secondary Academy Ufuma! My top recommended courses are: ${courseNames}. Take the Career Guidance test too!`;
-    const url = window.location.href;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text + "\n" + url)}`, "_blank", "noopener,noreferrer");
+    const shareUrl = window.location.href;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + "\n" + shareUrl)}`;
+    // Use anchor tag click to work in sandboxed iframes
+    const a = document.createElement("a");
+    a.href = whatsappUrl;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
+  const [linkCopied, setLinkCopied] = useState(false);
+
   const handleCopyLink = async () => {
+    const text = window.location.href;
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(text);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     } catch {
-      // Fallback
+      // Fallback: use a temporary textarea
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
