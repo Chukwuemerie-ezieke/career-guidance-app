@@ -1,18 +1,16 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SchoolHeader } from "@/components/SchoolHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Submission } from "@shared/schema";
+import { getSubmissions, type LocalSubmission } from "@/lib/localStore";
 import {
   Users, Search, ArrowLeft, BarChart3, TrendingUp,
-  Download, Filter, Eye, Compass
+  Filter, Eye, Compass
 } from "lucide-react";
 
 interface RecResult {
@@ -24,9 +22,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
 
-  const { data: submissions = [], isLoading } = useQuery<Submission[]>({
-    queryKey: ["/api/submissions"],
-  });
+  const submissions = useMemo(() => getSubmissions(), []);
 
   // Parse recommendations for each submission
   const parsedSubmissions = useMemo(() => {
@@ -100,6 +96,9 @@ export default function Dashboard() {
               Student Career Guidance Summary
             </h2>
             <p className="text-sm text-muted-foreground">View all student submissions and recommendations</p>
+            <p className="text-xs text-muted-foreground mt-1 italic">
+              Note: Data is stored in this browser's local storage. To collect data across all students, consider a server-hosted deployment.
+            </p>
           </div>
           <Link href="/">
             <Button variant="outline" size="sm" className="gap-2" data-testid="link-back-home">
@@ -117,7 +116,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs text-muted-foreground">Total Students</p>
                   <p className="text-lg font-bold" data-testid="text-total-students">
-                    {isLoading ? <Skeleton className="h-6 w-8" /> : submissions.length}
+                    {submissions.length}
                   </p>
                 </div>
               </div>
@@ -130,7 +129,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-xs text-muted-foreground">Unique Courses</p>
                   <p className="text-lg font-bold" data-testid="text-unique-courses">
-                    {isLoading ? <Skeleton className="h-6 w-8" /> : allCourses.length}
+                    {allCourses.length}
                   </p>
                 </div>
               </div>
@@ -148,7 +147,7 @@ export default function Dashboard() {
                     {name} ({count})
                   </Badge>
                 ))}
-                {courseStats.length === 0 && !isLoading && (
+                {courseStats.length === 0 && (
                   <span className="text-xs text-muted-foreground">No data yet</span>
                 )}
               </div>
@@ -187,13 +186,7 @@ export default function Dashboard() {
         {/* Table */}
         <Card>
           <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-3">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : filtered.length === 0 ? (
+            {filtered.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-muted-foreground">

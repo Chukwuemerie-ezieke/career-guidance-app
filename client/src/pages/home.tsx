@@ -14,7 +14,7 @@ import {
   UNIVERSITY_TYPES, GRADE_RANGES, getRecommendations, generateWhyText,
   type CourseData
 } from "@/lib/courseData";
-import { apiRequest } from "@/lib/queryClient";
+import { createSubmission } from "@/lib/localStore";
 import { useToast } from "@/hooks/use-toast";
 import {
   Compass, ArrowRight, ArrowLeft, Sparkles, X,
@@ -87,10 +87,7 @@ export default function Home() {
         recommendations: JSON.stringify(recsWithWhy),
       };
 
-      const res = await apiRequest("POST", "/api/submissions", payload);
-      const submission = await res.json();
-
-      // Store results in session via URL
+      const submission = createSubmission(payload);
       navigate(`/results/${submission.id}`);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });

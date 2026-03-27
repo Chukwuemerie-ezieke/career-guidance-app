@@ -1,12 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { useRoute, Link } from "wouter";
 import { SchoolHeader } from "@/components/SchoolHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import type { Submission } from "@shared/schema";
+import { getSubmission, type LocalSubmission } from "@/lib/localStore";
 import { INTERESTS } from "@/lib/courseData";
 import {
   GraduationCap, BookOpen, Building2, Briefcase, Clock,
@@ -31,10 +30,10 @@ export default function Results() {
   const [, params] = useRoute("/results/:id");
   const id = params?.id;
 
-  const { data: submission, isLoading } = useQuery<Submission>({
-    queryKey: ["/api/submissions", id],
-    enabled: !!id,
-  });
+  const submission = useMemo<LocalSubmission | undefined>(() => {
+    if (!id) return undefined;
+    return getSubmission(parseInt(id));
+  }, [id]);
 
   const handlePrint = () => {
     window.print();
@@ -47,7 +46,6 @@ export default function Results() {
     const text = `I just discovered my career path at The Incubators Secondary Academy Ufuma! My top recommended courses are: ${courseNames}. Take the Career Guidance test too!`;
     const shareUrl = window.location.href;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + "\n" + shareUrl)}`;
-    // Use anchor tag click to work in sandboxed iframes
     const a = document.createElement("a");
     a.href = whatsappUrl;
     a.target = "_blank";
@@ -66,7 +64,6 @@ export default function Results() {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
-      // Fallback: use a temporary textarea
       const ta = document.createElement("textarea");
       ta.value = text;
       ta.style.position = "fixed";
@@ -80,20 +77,6 @@ export default function Results() {
       setTimeout(() => setLinkCopied(false), 2000);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <SchoolHeader />
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      </div>
-    );
-  }
 
   if (!submission) {
     return (
@@ -172,7 +155,7 @@ export default function Results() {
               <Share2 className="w-3.5 h-3.5" /> WhatsApp
             </Button>
             <Button size="sm" variant="ghost" onClick={handleCopyLink} className="gap-1.5" data-testid="button-copy-link">
-              Copy Link
+              {linkCopied ? "Copied!" : "Copy Link"}
             </Button>
           </div>
         </div>
