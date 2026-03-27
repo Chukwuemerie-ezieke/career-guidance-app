@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { SchoolHeader } from "@/components/SchoolHeader";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -308,7 +307,6 @@ export default function Results() {
 
       <footer className="text-center py-4 text-xs text-muted-foreground border-t border-border/50 print:hidden space-y-1">
         <p>Powered by Harmony Digital Consults</p>
-        <PerplexityAttribution />
       </footer>
     </div>
   );

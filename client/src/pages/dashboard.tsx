@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { SchoolHeader } from "@/components/SchoolHeader";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -261,7 +260,6 @@ export default function Dashboard() {
 
       <footer className="text-center py-4 text-xs text-muted-foreground border-t border-border/50 space-y-1">
         <p>Powered by Harmony Digital Consults</p>
-        <PerplexityAttribution />
       </footer>
     </div>
   );

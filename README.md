@@ -112,7 +112,6 @@ The app includes 35 Nigerian university courses across 10 categories:
 
 - **School:** The Incubators Secondary Academy Ufuma
 - **Developed by:** Harmony Digital Consults Ltd
-- **Built with:** Perplexity Computer
 
 ## License
 

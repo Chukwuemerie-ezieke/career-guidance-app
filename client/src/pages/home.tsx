@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import {
   SUBJECTS, INTERESTS, CLASSES, NIGERIAN_STATES,
   UNIVERSITY_TYPES, GRADE_RANGES, getRecommendations, generateWhyText,
@@ -320,7 +319,6 @@ export default function Home() {
 
       <footer className="text-center py-4 text-xs text-muted-foreground border-t border-border/50 space-y-1">
         <p>Powered by Harmony Digital Consults</p>
-        <PerplexityAttribution />
       </footer>
     </div>
   );

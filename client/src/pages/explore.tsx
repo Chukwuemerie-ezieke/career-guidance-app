@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { SchoolHeader } from "@/components/SchoolHeader";
-import { PerplexityAttribution } from "@/components/PerplexityAttribution";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -215,7 +214,6 @@ export default function Explore() {
 
       <footer className="text-center py-4 text-xs text-muted-foreground border-t border-border/50 space-y-1">
         <p>Powered by Harmony Digital Consults</p>
-        <PerplexityAttribution />
       </footer>
     </div>
   );
