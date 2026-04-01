@@ -1,15 +1,15 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
 });
 
-export const submissions = sqliteTable("submissions", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const submissions = pgTable("submissions", {
+  id: serial("id").primaryKey(),
   firstName: text("first_name").notNull(),
   studentClass: text("student_class").notNull(),
   strongestSubjects: text("strongest_subjects").notNull(), // JSON array

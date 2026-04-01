@@ -9,6 +9,7 @@ const allowlist = [
   "axios",
   "cors",
   "date-fns",
+  "@neondatabase/serverless",
   "drizzle-orm",
   "drizzle-zod",
   "express",

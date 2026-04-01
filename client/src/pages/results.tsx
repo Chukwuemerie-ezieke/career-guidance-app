@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRoute, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { SchoolHeader } from "@/components/SchoolHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { getSubmission, type LocalSubmission } from "@/lib/localStore";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { Submission } from "@shared/schema";
 import { INTERESTS } from "@/lib/courseData";
 import {
   GraduationCap, BookOpen, Building2, Briefcase, Clock,
@@ -30,10 +32,10 @@ export default function Results() {
   const [, params] = useRoute("/results/:id");
   const id = params?.id;
 
-  const submission = useMemo<LocalSubmission | undefined>(() => {
-    if (!id) return undefined;
-    return getSubmission(parseInt(id));
-  }, [id]);
+  const { data: submission, isLoading, error } = useQuery<Submission>({
+    queryKey: ["/api/submissions", id],
+    enabled: !!id,
+  });
 
   const handlePrint = () => {
     window.print();
@@ -78,7 +80,21 @@ export default function Results() {
     }
   };
 
-  if (!submission) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SchoolHeader />
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6 space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !submission) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <SchoolHeader />

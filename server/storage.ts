@@ -2,14 +2,50 @@ import {
   type User, type InsertUser, users,
   type Submission, type InsertSubmission, submissions
 } from "@shared/schema";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import { eq, desc } from "drizzle-orm";
 
-const sqlite = new Database("data.db");
-sqlite.pragma("journal_mode = WAL");
+function getDb() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+  const sql = neon(databaseUrl);
+  return drizzle(sql);
+}
 
-export const db = drizzle(sqlite);
+// Create tables on first use
+async function ensureTables() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+  const sql = neon(databaseUrl);
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL
+    )
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS submissions (
+      id SERIAL PRIMARY KEY,
+      first_name TEXT NOT NULL,
+      student_class TEXT NOT NULL,
+      strongest_subjects TEXT NOT NULL,
+      interests TEXT NOT NULL,
+      university_type TEXT NOT NULL,
+      preferred_state TEXT NOT NULL,
+      grade_range TEXT NOT NULL,
+      recommendations TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `;
+}
+
+let tablesEnsured = false;
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -21,51 +57,52 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  constructor() {
-    // Create tables if they don't exist
-    sqlite.exec(`
-      CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS submissions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        first_name TEXT NOT NULL,
-        student_class TEXT NOT NULL,
-        strongest_subjects TEXT NOT NULL,
-        interests TEXT NOT NULL,
-        university_type TEXT NOT NULL,
-        preferred_state TEXT NOT NULL,
-        grade_range TEXT NOT NULL,
-        recommendations TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
-    `);
+  private async init() {
+    if (!tablesEnsured) {
+      await ensureTables();
+      tablesEnsured = true;
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return db.select().from(users).where(eq(users.id, id)).get();
+    await this.init();
+    const db = getDb();
+    const rows = await db.select().from(users).where(eq(users.id, id));
+    return rows[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return db.select().from(users).where(eq(users.username, username)).get();
+    await this.init();
+    const db = getDb();
+    const rows = await db.select().from(users).where(eq(users.username, username));
+    return rows[0];
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    return db.insert(users).values(insertUser).returning().get();
+    await this.init();
+    const db = getDb();
+    const rows = await db.insert(users).values(insertUser).returning();
+    return rows[0];
   }
 
   async createSubmission(data: InsertSubmission): Promise<Submission> {
-    return db.insert(submissions).values(data).returning().get();
+    await this.init();
+    const db = getDb();
+    const rows = await db.insert(submissions).values(data).returning();
+    return rows[0];
   }
 
   async getSubmissions(): Promise<Submission[]> {
-    return db.select().from(submissions).orderBy(desc(submissions.createdAt)).all();
+    await this.init();
+    const db = getDb();
+    return db.select().from(submissions).orderBy(desc(submissions.createdAt));
   }
 
   async getSubmission(id: number): Promise<Submission | undefined> {
-    return db.select().from(submissions).where(eq(submissions.id, id)).get();
+    await this.init();
+    const db = getDb();
+    const rows = await db.select().from(submissions).where(eq(submissions.id, id));
+    return rows[0];
   }
 }
 
