@@ -1,7 +1,7 @@
 import {
   type User, type InsertUser, users,
   type Submission, type InsertSubmission, submissions
-} from "@shared/schema";
+} from "../shared/schema";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { eq, desc } from "drizzle-orm";
