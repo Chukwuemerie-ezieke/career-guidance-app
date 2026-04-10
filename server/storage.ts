@@ -22,14 +22,14 @@ async function ensureTables() {
     throw new Error("DATABASE_URL environment variable is not set");
   }
   const sql = neon(databaseUrl);
-  await sql`
+  await sql(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL
     )
-  `;
-  await sql`
+  `);
+  await sql(`
     CREATE TABLE IF NOT EXISTS submissions (
       id SERIAL PRIMARY KEY,
       first_name TEXT NOT NULL,
@@ -42,7 +42,7 @@ async function ensureTables() {
       recommendations TEXT NOT NULL,
       created_at TEXT NOT NULL
     )
-  `;
+  `);
 }
 
 let tablesEnsured = false;

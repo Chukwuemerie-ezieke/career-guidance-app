@@ -31,7 +31,7 @@ async function createHandler() {
   async function ensureTables() {
     if (tablesReady) return;
     const sql = neon(process.env.DATABASE_URL!);
-    await sql`
+    await sql(`
       CREATE TABLE IF NOT EXISTS submissions (
         id SERIAL PRIMARY KEY,
         first_name TEXT NOT NULL,
@@ -44,7 +44,7 @@ async function createHandler() {
         recommendations TEXT NOT NULL,
         created_at TEXT NOT NULL
       )
-    `;
+    `);
     tablesReady = true;
   }
 
