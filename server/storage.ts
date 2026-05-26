@@ -1,5 +1,4 @@
 import {
-  type User, type InsertUser, users,
   type Submission, type InsertSubmission, submissions
 } from "../shared/schema";
 import { neon } from "@neondatabase/serverless";
@@ -23,13 +22,6 @@ async function ensureTables() {
   }
   const sql = neon(databaseUrl);
   await sql(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL
-    )
-  `);
-  await sql(`
     CREATE TABLE IF NOT EXISTS submissions (
       id SERIAL PRIMARY KEY,
       first_name TEXT NOT NULL,
@@ -48,9 +40,6 @@ async function ensureTables() {
 let tablesEnsured = false;
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
   createSubmission(data: InsertSubmission): Promise<Submission>;
   getSubmissions(): Promise<Submission[]>;
   getSubmission(id: number): Promise<Submission | undefined>;
@@ -62,27 +51,6 @@ export class DatabaseStorage implements IStorage {
       await ensureTables();
       tablesEnsured = true;
     }
-  }
-
-  async getUser(id: number): Promise<User | undefined> {
-    await this.init();
-    const db = getDb();
-    const rows = await db.select().from(users).where(eq(users.id, id));
-    return rows[0];
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    await this.init();
-    const db = getDb();
-    const rows = await db.select().from(users).where(eq(users.username, username));
-    return rows[0];
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    await this.init();
-    const db = getDb();
-    const rows = await db.insert(users).values(insertUser).returning();
-    return rows[0];
   }
 
   async createSubmission(data: InsertSubmission): Promise<Submission> {
