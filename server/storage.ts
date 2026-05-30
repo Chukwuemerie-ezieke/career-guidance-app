@@ -43,6 +43,7 @@ export interface IStorage {
   createSubmission(data: InsertSubmission): Promise<Submission>;
   getSubmissions(): Promise<Submission[]>;
   getSubmission(id: number): Promise<Submission | undefined>;
+  deleteSubmission(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -71,6 +72,12 @@ export class DatabaseStorage implements IStorage {
     const db = getDb();
     const rows = await db.select().from(submissions).where(eq(submissions.id, id));
     return rows[0];
+  }
+
+  async deleteSubmission(id: number): Promise<void> {
+    await this.init();
+    const db = getDb();
+    await db.delete(submissions).where(eq(submissions.id, id));
   }
 }
 

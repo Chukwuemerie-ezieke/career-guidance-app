@@ -1,9 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from "recharts";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import {
   Users, BarChart3, TrendingUp, Search, Filter,
-  ArrowLeft, Compass, Eye, Lock
+  ArrowLeft, Compass, Eye, Lock, Download, Trash2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,6 +45,12 @@ type Submission = {
   createdAt: string;
 };
 
+type ParsedSubmission = Submission & {
+  parsedRecs: CourseRec[];
+  subjects: string[];
+  interestsParsed: string[];
+};
+
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
@@ -65,6 +75,57 @@ export default function Dashboard() {
   });
 
   const isLoading = userLoading || subsLoading;
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+      toast({ title: "Submission deleted" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete submission", variant: "destructive" });
+    },
+  });
+
+  const exportToCSV = () => {
+    if (filtered.length === 0) return;
+
+    // Create CSV header
+    const headers = ["ID", "Name", "Class", "Subjects", "Interests", "University Type", "State", "Grade Range", "Recommendations", "Date"];
+
+    // Create CSV rows
+    const rows = filtered.map((s: any) => [
+      s.id,
+      `"${s.firstName}"`,
+      `"${s.studentClass}"`,
+      `"${s.subjects.join(", ")}"`,
+      `"${s.interestsParsed.join(", ")}"`,
+      `"${s.universityType}"`,
+      `"${s.preferredState}"`,
+      `"${s.gradeRange}"`,
+      `"${s.parsedRecs.map((r: any) => r.name).join(", ")}"`,
+      new Date(s.createdAt).toLocaleDateString()
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(r => r.join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `student-submissions-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +212,14 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [parsedSubmissions]);
 
+
+  const chartData = useMemo(() => {
+    return courseStats.map(([name, count]: any) => ({
+      name: name.length > 20 ? name.substring(0, 20) + "..." : name,
+      count
+    }));
+  }, [courseStats]);
+
   // Filter
   const filtered = useMemo(() => {
     let result = parsedSubmissions;
@@ -191,11 +260,16 @@ export default function Dashboard() {
             </h2>
             <p className="text-sm text-muted-foreground">View all student submissions and recommendations</p>
           </div>
-          <Link href="/">
-            <Button variant="outline" size="sm" className="gap-2" data-testid="link-back-home">
-              <ArrowLeft className="w-4 h-4" /> Back to Home
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={exportToCSV} disabled={filtered.length === 0}>
+              <Download className="w-4 h-4" /> Export CSV
             </Button>
-          </Link>
+            <Link href="/">
+              <Button variant="outline" size="sm" className="gap-2" data-testid="link-back-home">
+                <ArrowLeft className="w-4 h-4" /> Back to Home
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {isLoading ? (
@@ -243,7 +317,7 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">Top Recommended Courses</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {courseStats.map(([name, count]) => (
+                    {courseStats.map(([name, count]: any) => (
                       <Badge key={name} variant="secondary" className="text-xs">
                         {name} ({count})
                       </Badge>
@@ -255,6 +329,55 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Visual Analytics */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary" />
+                  Course Recommendations Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 w-full mt-4">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 25, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 11 }}
+                          tickLine={false}
+                          axisLine={false}
+                          angle={-25}
+                          textAnchor="end"
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fontSize: 11 }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <Tooltip
+                          cursor={{ fill: 'transparent' }}
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Bar
+                          dataKey="count"
+                          fill="var(--color-primary, #16a34a)"
+                          radius={[4, 4, 0, 0]}
+                          barSize={32}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                      No data available yet
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
@@ -305,23 +428,24 @@ export default function Dashboard() {
                           <TableHead className="text-xs">Recommended Courses</TableHead>
                           <TableHead className="text-xs">Date</TableHead>
                           <TableHead className="text-xs w-16">View</TableHead>
+                          <TableHead className="text-xs w-16">Delete</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filtered.map(s => (
+                        {filtered.map((s: any) => (
                           <TableRow key={s.id} data-testid={`row-student-${s.id}`}>
                             <TableCell className="font-medium text-sm">{s.firstName}</TableCell>
                             <TableCell className="text-sm">{s.studentClass}</TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {s.subjects.map(sub => (
+                                {s.subjects.map((sub: any) => (
                                   <Badge key={sub} variant="outline" className="text-xs">{sub}</Badge>
                                 ))}
                               </div>
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1">
-                                {s.parsedRecs.map(r => (
+                                {s.parsedRecs.map((r: any) => (
                                   <Badge key={r.name} className="text-xs bg-primary/10 text-primary border-primary/20">
                                     {r.name}
                                   </Badge>
@@ -337,6 +461,21 @@ export default function Dashboard() {
                                   <Eye className="w-3.5 h-3.5" />
                                 </Button>
                               </Link>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1 text-destructive hover:text-destructive/90"
+                                onClick={() => {
+                                  if (window.confirm("Are you sure you want to delete this submission?")) {
+                                    deleteMutation.mutate(s.id);
+                                  }
+                                }}
+                                disabled={deleteMutation.isPending}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}

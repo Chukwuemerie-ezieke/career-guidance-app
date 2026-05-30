@@ -95,6 +95,15 @@ async function createHandler() {
       return res.json(rows[0]);
     }
 
+
+    // DELETE /api/submissions/:id
+    if (method === "DELETE" && idMatch) {
+      if (!(await isAuthenticated())) return res.status(401).json({ error: "Unauthorized" });
+      const id = parseInt(idMatch[1]);
+      await db.delete(submissions).where(eq(submissions.id, id));
+      return res.json({ success: true });
+    }
+
     // POST /api/submissions
     if (method === "POST" && (url === "/api/submissions" || url === "/api" || url === "/api/")) {
       try {

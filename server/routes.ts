@@ -80,6 +80,18 @@ export async function registerRoutes(
 
 
 
+
+  // Delete submission
+  app.delete("/api/submissions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteSubmission(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/login", async (req, res) => {
     const { password } = req.body;
     if (password === ADMIN_PASSWORD) {
