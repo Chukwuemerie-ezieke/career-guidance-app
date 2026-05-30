@@ -1,37 +1,94 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { SchoolHeader } from "@/components/SchoolHeader";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  Users, BarChart3, TrendingUp, Search, Filter,
+  ArrowLeft, Compass, Eye, Lock
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { Submission } from "@shared/schema";
-import {
-  Users, Search, ArrowLeft, BarChart3, TrendingUp,
-  Filter, Eye, Compass
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SchoolHeader } from "@/components/SchoolHeader";
+import { useToast } from "@/hooks/use-toast";
 
-interface RecResult {
+type CourseRec = {
   name: string;
   category: string;
-}
+  reasoning: string;
+  jambSubject: string;
+  oLevelRequirements: string;
+  cutOffMark: string;
+  topUniversities: string[];
+  careerPaths: string[];
+  estimatedYears: number;
+};
+
+
+type Submission = {
+  id: number;
+  firstName: string;
+  studentClass: string;
+  strongestSubjects: string;
+  interests: string;
+  universityType: string;
+  preferredState: string;
+  gradeRange: string;
+  recommendations: string;
+  createdAt: string;
+};
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
+  const [password, setPassword] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { toast } = useToast();
 
-  const { data: submissions = [], isLoading } = useQuery<Submission[]>({
-    queryKey: ["/api/submissions"],
+  const { data: user, isLoading: userLoading } = useQuery<any>({
+    queryKey: ["/api/user"],
+    retry: false,
   });
 
-  // Parse recommendations for each submission
+  useEffect(() => {
+    if (user && !user.error) {
+      setIsAuthenticated(true);
+    }
+  }, [user]);
+
+  const { data: submissions = [], isLoading: subsLoading } = useQuery<Submission[]>({
+    queryKey: ["/api/submissions"],
+    enabled: isAuthenticated,
+  });
+
+  const isLoading = userLoading || subsLoading;
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        toast({ title: "Logged in successfully" });
+      } else {
+        toast({ title: "Invalid password", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Error logging in", variant: "destructive" });
+    }
+  };
+
   const parsedSubmissions = useMemo(() => {
-    return submissions.map(s => {
-      const recs: RecResult[] = JSON.parse(s.recommendations);
+    if (!submissions) return [];
+    return submissions.map((s: Submission) => {
+      const recs: CourseRec[] = JSON.parse(s.recommendations);
       return {
         ...s,
         parsedRecs: recs,
@@ -40,6 +97,39 @@ export default function Dashboard() {
       };
     });
   }, [submissions]);
+
+  if (!isAuthenticated && !userLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <SchoolHeader />
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
+              <CardTitle>Counsellor Login</CardTitle>
+              <CardDescription>Enter the admin password to view student records</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                />
+                <Button type="submit" className="w-full">Login</Button>
+              </form>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+
 
   // Get all unique recommended courses
   const allCourses = useMemo(() => {
